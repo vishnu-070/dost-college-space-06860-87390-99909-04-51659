@@ -39,16 +39,8 @@ const AppRoutes = () => {
           <Onboarding />
         </ProtectedRoute>
       } />
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Home />
-        </ProtectedRoute>
-      } />
-      <Route path="/post/:id" element={
-        <ProtectedRoute>
-          <PostDetail />
-        </ProtectedRoute>
-      } />
+      <Route path="/" element={<Home />} />
+      <Route path="/post/:id" element={<PostDetail />} />
       <Route path="/profile" element={
         <ProtectedRoute>
           <Profile />
