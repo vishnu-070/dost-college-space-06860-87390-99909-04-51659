@@ -105,11 +105,29 @@ export const PostCard = ({
             <ThumbsUp className={`h-4 w-4 ${hasLiked ? 'fill-primary text-primary' : ''}`} />
             <span className="hidden sm:inline">{likesCount}</span>
           </Button>
-          <Button variant="ghost" size="sm" className="gap-2 hover:bg-secondary transition-all" asChild>
-            <Link to={`/post/${id}`}>
-              <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">{comments}</span>
-            </Link>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-2 hover:bg-secondary transition-all"
+            onClick={(e) => {
+              if (!user) {
+                e.preventDefault();
+                setShowAuthModal(true);
+              }
+            }}
+            asChild={!!user}
+          >
+            {user ? (
+              <Link to={`/post/${id}`}>
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">{comments}</span>
+              </Link>
+            ) : (
+              <>
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">{comments}</span>
+              </>
+            )}
           </Button>
           <Button variant="ghost" size="sm" className="hover:bg-secondary transition-all">
             <Share2 className="h-4 w-4" />

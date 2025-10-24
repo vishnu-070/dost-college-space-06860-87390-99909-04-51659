@@ -6,10 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usePosts } from "@/hooks/usePosts";
 import { ProfileUpdateNotification } from "@/components/notifications/ProfileUpdateNotification";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Home = () => {
   const [sortBy, setSortBy] = useState("best");
-  const { posts, loading } = usePosts();
+  const { user } = useAuth();
+  const { posts, loading } = usePosts(!!user);
 
   const getTimeAgo = (dateString: string) => {
     const now = new Date();
@@ -58,28 +60,30 @@ const Home = () => {
     <MainLayout>
       <ProfileUpdateNotification />
       <div className="max-w-3xl mx-auto p-4 md:p-6">
-        <CreatePost />
+        {user && <CreatePost />}
 
         <div className="flex items-center justify-between mb-4 mt-6">
           <h2 className="text-xl font-semibold">Posts</h2>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Sort by:</span>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="best">Best</SelectItem>
-                <SelectItem value="trending">Trending</SelectItem>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="top">Top</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {user && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Sort by:</span>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="best">Best</SelectItem>
+                  <SelectItem value="trending">Trending</SelectItem>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="top">Top</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
-          {sortedPosts.map((post) => (
+          {(user ? sortedPosts : posts).map((post) => (
             <PostCard 
               key={post.id}
               id={post.id}
@@ -88,6 +92,7 @@ const Home = () => {
               timeAgo={getTimeAgo(post.created_at)}
               title={post.content.substring(0, 100)}
               content={post.content}
+              category={post.category}
               image={!!post.image_url}
               likes={[]}
               dislikes={[]}

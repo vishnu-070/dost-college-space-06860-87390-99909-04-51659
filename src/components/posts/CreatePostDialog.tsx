@@ -8,9 +8,11 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -19,14 +21,16 @@ interface CreatePostDialogProps {
 
 export const CreatePostDialog = ({ open, onOpenChange }: CreatePostDialogProps) => {
   const [postContent, setPostContent] = useState("");
+  const [category, setCategory] = useState<string>("B.Tech");
   const [images, setImages] = useState<string[]>([]);
   const [videos, setVideos] = useState<string[]>([]);
   const [location, setLocation] = useState("");
   const [showPoll, setShowPoll] = useState(false);
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
+  const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
-  const { user, createPost } = useAuth();
+  const { user } = useAuth();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -72,8 +76,8 @@ export const CreatePostDialog = ({ open, onOpenChange }: CreatePostDialogProps) 
     }
   };
 
-  const handlePost = () => {
-    if (!postContent.trim() && images.length === 0 && videos.length === 0 && !showPoll) {
+  const handlePost = async () => {
+    if (!postContent.trim()) {
       toast({
         title: "Error",
         description: "Please add some content to post",
@@ -82,45 +86,42 @@ export const CreatePostDialog = ({ open, onOpenChange }: CreatePostDialogProps) 
       return;
     }
 
-    if (showPoll && (!pollQuestion.trim() || pollOptions.filter(o => o.trim()).length < 2)) {
+    setIsPosting(true);
+    try {
+      const { error } = await (supabase as any)
+        .from('posts')
+        .insert({
+          user_id: user?.id,
+          content: postContent,
+          category: category,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Posted!",
+        description: "Your post has been published successfully",
+      });
+
+      // Reset form
+      setPostContent("");
+      setCategory("B.Tech");
+      setImages([]);
+      setVideos([]);
+      setLocation("");
+      setShowPoll(false);
+      setPollQuestion("");
+      setPollOptions(["", ""]);
+      onOpenChange(false);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Please add a poll question and at least 2 options",
+        description: error.message || "Failed to create post",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsPosting(false);
     }
-
-    createPost({
-      content: postContent,
-      images: images.length > 0 ? images : undefined,
-      videos: videos.length > 0 ? videos : undefined,
-      location: location || undefined,
-      poll: showPoll ? {
-        question: pollQuestion,
-        options: pollOptions.filter(o => o.trim()).map((text, i) => ({
-          id: `opt-${i}`,
-          text,
-          votes: 0,
-        })),
-        votedBy: [],
-      } : undefined,
-    });
-
-    toast({
-      title: "Posted!",
-      description: "Your post has been published successfully",
-    });
-
-    // Reset form
-    setPostContent("");
-    setImages([]);
-    setVideos([]);
-    setLocation("");
-    setShowPoll(false);
-    setPollQuestion("");
-    setPollOptions(["", ""]);
-    onOpenChange(false);
   };
 
   return (
@@ -150,6 +151,21 @@ export const CreatePostDialog = ({ open, onOpenChange }: CreatePostDialogProps) 
                 Public
               </Button>
             </div>
+          </div>
+
+          {/* Category Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Category</label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover">
+                <SelectItem value="B.Tech">B.Tech</SelectItem>
+                <SelectItem value="Abroad">Abroad</SelectItem>
+                <SelectItem value="Entrance Exam">Entrance Exam</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Text Area */}
@@ -339,8 +355,9 @@ export const CreatePostDialog = ({ open, onOpenChange }: CreatePostDialogProps) 
           <Button
             className="w-full bg-primary hover:bg-primary-hover text-primary-foreground"
             onClick={handlePost}
+            disabled={isPosting}
           >
-            Post
+            {isPosting ? "Posting..." : "Post"}
           </Button>
         </div>
       </DialogContent>
