@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Phone, Chrome } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +17,13 @@ export default function Auth() {
   const [showOtpInput, setShowOtpInput] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleGoogleAuth = async () => {
     setIsLoading(true);
@@ -28,6 +36,7 @@ export default function Auth() {
       });
       
       if (error) throw error;
+      // Navigation will be handled by useAuth hook
     } catch (error: any) {
       toast({
         title: "Error",
@@ -68,7 +77,7 @@ export default function Auth() {
           title: "Success!",
           description: "You've successfully logged in.",
         });
-        navigate("/");
+        // Navigation will be handled by useAuth hook
       }
     } catch (error: any) {
       toast({

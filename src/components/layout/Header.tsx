@@ -10,24 +10,47 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/logo.png";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CreatePostDialog } from "@/components/posts/CreatePostDialog";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Header = () => {
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, signOut } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    } else {
+      setProfile(null);
+    }
+  }, [user]);
+
+  const loadProfile = async () => {
+    if (!user) return;
+    
+    const { data } = await (supabase as any)
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('id', user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setProfile(data);
+    }
+  };
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    await signOut();
   };
 
   return (
@@ -92,11 +115,11 @@ export const Header = () => {
                       size="icon" 
                       className="hover:bg-secondary rounded-full" 
                     >
-                      {user?.profilePicture ? (
-                        <img src={user.profilePicture} alt="Profile" className="h-8 w-8 rounded-full" />
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
                       ) : (
                         <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-semibold">
-                          {user?.username?.[0]?.toUpperCase() || 'U'}
+                          {profile?.username?.[0]?.toUpperCase() || 'U'}
                         </div>
                       )}
                     </Button>
