@@ -15,15 +15,23 @@ export const ProfileUpdateNotification = () => {
     if (!user || dismissed) return;
 
     const checkProfile = async () => {
-      const { data: profile } = await (supabase as any)
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('username, avatar_url, bio')
+        .select('username, avatar_url, bio, state')
         .eq('id', user.id)
         .maybeSingle();
 
-      // Show notification if profile is incomplete
-      const isIncomplete = !profile?.bio || !profile?.avatar_url;
-      setShowNotification(isIncomplete);
+      // Show notification if profile is incomplete (< 100%)
+      const fields = [
+        profile?.username,
+        profile?.avatar_url,
+        profile?.bio,
+        profile?.state,
+      ];
+      const filledFields = fields.filter(f => f && f.trim() !== '').length;
+      const completionPercentage = (filledFields / fields.length) * 100;
+      
+      setShowNotification(completionPercentage < 100);
     };
 
     checkProfile();
@@ -39,10 +47,10 @@ export const ProfileUpdateNotification = () => {
           <div className="flex-1">
             <p className="font-semibold mb-1">Complete Your Profile</p>
             <p className="text-sm text-muted-foreground mb-2">
-              Add a bio and profile picture to help others connect with you!
+              Complete your profile to help others connect with you!
             </p>
             <Button asChild size="sm" className="mr-2">
-              <Link to="/profile">Update Profile</Link>
+              <Link to="/profile?edit=true">Update Profile</Link>
             </Button>
             <Button 
               variant="ghost" 
